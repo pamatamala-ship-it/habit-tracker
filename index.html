@@ -67,6 +67,7 @@ footer{bottom:0;padding:.6rem 1rem;text-align:center;font-size:.85rem}
     <button id="todayBtn" title="Ir a hoy">Hoy</button>
     <button id="habitBtn" title="Editar hábitos">Hábitos</button>
     <button id="heatBtn" title="Abrir mapa de calor">Mapa de calor</button>
+    <button id="resumenBtn" title="Ver resumen rápido de hoy">Resumen</button>
   </div>
   <div class="right">
     <button id="backupBtn" title="Exportar respaldo JSON">Backup</button>
@@ -839,6 +840,10 @@ QS('#heatBtn').onclick=openHeatmap;
 QS('#backupBtn').onclick=doBackup;
 QS('#importBtn').onclick=doImport;
 QS('#csvBtn').onclick=exportCSV;
+  QS('#resumenBtn').onclick=()=>{
+  const base = location.href.split('?')[0];
+  location.href = base + '?resumen';
+};
 monthSel.onchange=refreshAll; yearSel.onchange=refreshAll;
 
 // ---------- Init ----------
@@ -895,4 +900,5 @@ setTimeout(scrollToToday, 120);
 </script>
 </body>
 </html>
+
 
