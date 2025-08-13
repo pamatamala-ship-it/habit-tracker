@@ -845,8 +845,54 @@ monthSel.onchange=refreshAll; yearSel.onchange=refreshAll;
 setupPWA();
 refreshAll();
 setTimeout(scrollToToday, 120);
+// ---------- Modo resumen ----------
+(function(){
+  const params = new URLSearchParams(location.search);
+  if(!params.has('resumen')) return;
+
+  document.body.innerHTML = `
+    <main style="padding:1.5rem;font-family:system-ui,sans-serif">
+      <h1 style="margin-bottom:1rem">Progreso de hoy</h1>
+      <div id="resumenPct" style="font-size:3rem;font-weight:bold;margin-bottom:1rem"></div>
+      <div style="height:1rem;background:var(--grid);border-radius:999px;overflow:hidden;margin-bottom:1.5rem">
+        <span id="resumenBar" style="display:block;height:100%;background:var(--accent);width:0%"></span>
+      </div>
+      <div id="resumenHabitos"></div>
+    </main>
+  `;
+
+  const y=NOW.getFullYear(), m=NOW.getMonth(), d=NOW.getDate();
+  const data = getMonthData(y,m);
+  const nHab=habits.length;
+  let checks=0;
+  const wrap = document.getElementById('resumenHabitos');
+  wrap.style.display='grid';
+  wrap.style.gap='0.8rem';
+
+  habits.forEach((h,i)=>{
+    const k=`${ymd(y,m,d)}:${i}`;
+    const checked=!!data[k];
+    if(checked) checks++;
+    const div=document.createElement('div');
+    div.style.display='flex'; div.style.alignItems='center'; div.style.gap='0.6rem';
+    const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=checked; chk.style.transform='scale(1.4)';
+    chk.onchange=()=>{
+      data[k]=chk.checked;
+      setMonthData(y,m,data);
+      location.reload();
+    };
+    const lbl=document.createElement('label'); lbl.textContent=h.name;
+    div.append(chk,lbl);
+    wrap.appendChild(div);
+  });
+
+  const pct = nHab>0 ? Math.round(100*checks/nHab) : 0;
+  document.getElementById('resumenPct').textContent = pct + '%';
+  document.getElementById('resumenBar').style.width = pct + '%';
+})();
 })();
 
 </script>
 </body>
 </html>
+
