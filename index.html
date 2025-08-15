@@ -1,901 +1,1008 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Habit Tracker</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>PT Tracker — Simple Log</title>
+<meta name="theme-color" content="#0b1020">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='%231b5bff'/><text x='50%' y='58%' text-anchor='middle' font-family='Arial' font-size='44' fill='white'>PT</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <style>
-:root{
-  --bg:#ffffff; --fg:#111; --muted:#6b7280; --grid:#e5e7eb; --card:#f9fafb; --accent:#2563eb;
-  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --today:#dbeafe; --shadow:0 2px 6px rgba(0,0,0,.08)
-}
-[data-mode="dark"]{
-  --bg:#0e1117; --fg:#e8eefc; --muted:#9aa5c2; --grid:#1f2937; --card:#151e33; --accent:#3b82f6;
-  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --today:#1e3a8a; --shadow:0 4px 10px rgba(0,0,0,.45)
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--fg);display:flex;flex-direction:column}
-header,footer{background:var(--card);box-shadow:var(--shadow);position:sticky;z-index:20}
-header{top:0;padding:.6rem .8rem;display:grid;grid-template-columns:1fr auto;gap:.6rem;align-items:center}
-header .left{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
-header .right{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:flex-end}
-h1{font-size:1.05rem;margin:0}
-select,button{appearance:none;background:var(--card);color:var(--fg);border:1px solid var(--grid);padding:.35rem .55rem;border-radius:8px;cursor:pointer}
-button:hover{background:var(--accent);color:#fff;border-color:transparent}
-button[aria-pressed="true"]{outline:2px solid var(--accent)}
-.badge{display:inline-block;min-width:2.1ch;padding:.05rem .45rem;border-radius:999px;background:var(--accent);color:#fff;font-size:.78rem;line-height:1.3}
-.card{background:var(--card);border:1px solid var(--grid);border-radius:12px;padding:.9rem;box-shadow:var(--shadow)}
-.grid{display:grid;gap:.8rem}
-main{flex:1;min-height:0;overflow:auto;padding:1rem}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--grid);border-radius:12px;overflow:hidden}
-thead th,tbody td,tbody th{border:1px solid var(--grid);padding:.35rem;text-align:center;vertical-align:middle}
-thead th{position:sticky;top:0;background:var(--card);z-index:1}
-tbody tr.today{background:var(--today)}
-tbody input[type="checkbox"]{width:1.15rem;height:1.15rem}
-.totals{display:grid;grid-template-columns:1fr;gap:.8rem;margin-bottom:.8rem}
-.progress{height:.65rem;background:var(--grid);border-radius:999px;overflow:hidden}
-.progress > span{display:block;height:100%;background:var(--accent)}
-.tip{font-size:.86rem;color:var(--muted)}
-/* Modal base */
-#modal,#habitModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:40}
-.modal-content{background:var(--bg);color:var(--fg);max-width:min(1100px,94vw);max-height:90vh;overflow:auto;border-radius:14px;border:1px solid var(--grid);box-shadow:var(--shadow);padding:1rem}
-.modal-head{display:flex;gap:.6rem;align-items:center;justify-content:space-between;margin-bottom:.5rem}
-.modal-actions{display:flex;flex-wrap:wrap;gap:.5rem}
-.modal-grid{display:grid;gap:1rem}
-@media (min-width:860px){.modal-grid{grid-template-columns:1fr 1fr}}
-.canvas-wrap{background:var(--card);border:1px solid var(--grid);border-radius:12px;padding:.6rem}
-.canvas-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
-.canvas-head h4{margin:.2rem 0;font-size:.95rem}
-canvas{display:block;width:100%;height:auto}
-.tooltip{position:fixed;pointer-events:none;background:var(--card);color:var(--fg);border:1px solid var(--grid);border-radius:8px;padding:.45rem .6rem;font-size:.85rem;box-shadow:var(--shadow);display:none;z-index:50;max-width:260px;white-space:nowrap}
-footer{bottom:0;padding:.6rem 1rem;text-align:center;font-size:.85rem}
-.kpi{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
-.kpi .pill{background:var(--grid);color:var(--fg);padding:.25rem .55rem;border-radius:999px;font-size:.8rem}
-.header-badges{display:flex;gap:.4rem;flex-wrap:wrap}
-.small{font-size:.82rem;color:var(--muted)}
-.hidden{display:none}
+  :root{
+    --bg:#0b1020; --panel:#10182a; --card:#141d31; --text:#e8eefc; --muted:#9aa5bd; --primary:#5ebd73;
+    --danger:#ef4444; --warn:#f59e0b; --ok:#22c55e; --line:#1f2a44; --accent:#7c9cff;
+    --touch:52px; --w: 460px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,Arial;
+    display:flex; justify-content:center;
+  }
+  .app{width:100%; max-width:var(--w); min-height:100%; display:flex; flex-direction:column}
+  header{
+    position:sticky; top:0; z-index:10; backdrop-filter:saturate(1.2) blur(10px);
+    background:linear-gradient(180deg, rgba(11,16,32,.95), rgba(11,16,32,.8));
+    border-bottom:1px solid var(--line); padding:10px 12px;
+  }
+  header .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .chip{background:#0f1630; border:1px solid var(--line); padding:8px 12px; border-radius:999px; color:var(--muted); font-size:13px}
+  .chip.ok{color:#68f0a7; border-color:#183a2d; background:#0b1f18}
+  .chip.warn{color:#ffd26a; border-color:#3a2e18; background:#1b160b}
+  .btn{
+    height:var(--touch); min-width:var(--touch); padding:0 16px; border-radius:14px; border:1px solid var(--line);
+    background:#0f1731; color:var(--text); cursor:pointer; font-size:16px; font-weight:600
+  }
+  .btn.primary{background:linear-gradient(180deg,#1c6b42,#155b38); border-color:#0d3b24}
+  .btn.small{height:40px; padding:0 12px; border-radius:10px; font-size:14px; font-weight:500}
+  .btn.block{width:100%}
+  .grid{display:grid; gap:12px}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px}
+  .row{display:flex; gap:12px; align-items:center}
+  .grow{flex:1}
+  .right{margin-left:auto}
+  label{color:var(--muted); font-size:13px; display:block; margin-bottom:6px}
+  input, select, textarea{
+    width:100%; background:#0e162e; color:var(--text); border:1px solid var(--line);
+    border-radius:14px; padding:12px 14px; height:48px; outline:none; font-size:16px
+  }
+  textarea{min-height:92px; resize:vertical}
+  .muted{color:var(--muted)}
+  main{flex:1; padding:12px 12px 88px}
+  section[hidden]{display:none !important}
+
+  /* NAV inferior */
+  nav.tabs{
+    position:sticky; bottom:0; z-index:10; border-top:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(11,16,32,.85), rgba(11,16,32,.95));
+    display:grid; grid-template-columns:repeat(5,1fr);
+  }
+  nav.tabs button{appearance:none; border:none; background:transparent; color:var(--muted); padding:8px 4px; height:70px; cursor:pointer; font-size:12px}
+  nav.tabs button.active{color:#bfe9ff}
+  nav.tabs .ico{display:block; font-size:18px}
+
+  /* Calendario compacto (heatmap) */
+  .cal{display:grid; grid-template-columns:repeat(7, 1fr); gap:6px}
+  .cal .dow{height:22px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px}
+  .cal .day{aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:13px; user-select:none;
+    border:1px solid #1a2543; background:#0e162e; cursor:pointer}
+  .cal .day.today{outline:2px solid var(--accent)}
+  .cal .day.sel{outline:2px solid var(--primary)}
+  .legend{display:flex; gap:8px; align-items:center}
+  .legend .sw{width:18px; height:12px; border-radius:4px; border:1px solid var(--line)}
+
+  /* Simple Add */
+  .simple label b{color:#eaf0ff}
+  .hint{font-size:12px; color:var(--muted)}
+  .exitem{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line)}
+  .exitem:last-child{border-bottom:none}
+  .exname{font-weight:600}
+  .exmeta{color:var(--muted); font-size:13px}
+
+  /* Slider "cómo me sentí" */
+  .feel-wrap{padding:10px; border-radius:14px; border:1px solid var(--line); background:#0e162e}
+  .feel-row{display:flex; align-items:center; gap:12px}
+  .feel-emoji{font-size:22px; width:32px; text-align:center}
+  input[type="range"]{width:100%}
+  .feel-chip{display:inline-block; padding:4px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:#cbe0ff}
+
+  /* Print */
+  @media print{
+    nav.tabs, header{display:none !important}
+    body{background:#fff; color:#000}
+    .panel, .card{border-color:#ddd}
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="left">
-    <h1>Habit Tracker</h1>
-    <select id="month" aria-label="Seleccionar mes"></select>
-    <select id="year" aria-label="Seleccionar año"></select>
-    <button id="toggleView" aria-pressed="false" title="Cambiar entre vista mensual y anual">Mes</button>
-    <button id="todayBtn" title="Ir a hoy">Hoy</button>
-    <button id="habitBtn" title="Editar hábitos">Hábitos</button>
-    <button id="heatBtn" title="Abrir mapa de calor">Mapa de calor</button>
-    <button id="resumenBtn" title="Ver resumen rápido de hoy">Resumen</button>
-  </div>
-  <div class="right">
-    <button id="backupBtn" title="Exportar respaldo JSON">Backup</button>
-    <button id="importBtn" title="Importar respaldo JSON">Importar</button>
-    <button id="csvBtn" title="Exportar CSV mensual">CSV</button>
-    <select id="smooth" aria-label="Suavizado de tendencia">
-      <option value="3">3</option>
-      <option value="7" selected>7</option>
-      <option value="14">14</option>
-    </select>
-    <button id="modeBtn" title="Cambiar claro/oscuro">Claro</button>
-  </div>
-</header>
-
-<main id="main">
-  <div class="totals" id="totals"></div>
-  <div class="card" id="trendCard" aria-label="Tendencia diaria">
-    <div class="kpi">
-      <strong>Tendencia diaria</strong>
-      <span class="pill">Media móvil: <span id="smoothLabel">7</span></span>
+<div class="app" role="application" aria-label="PT Tracker">
+  <header>
+    <div class="row" role="toolbar" aria-label="Barra superior">
+      <button id="btnToday" class="btn small" aria-label="Ir a hoy">Hoy</button>
+      <div class="chip" id="ctxDateChip" role="button" aria-label="Fecha">📅 <span id="ctxDateLabel">—</span></div>
+      <div class="chip ok right" id="metaChip">Meta mes: —</div>
+      <span class="muted" id="saveState">• sin guardar</span>
     </div>
-    <div id="trendWrap" style="margin-top:.6rem"></div>
-    <div class="small">Porcentaje de hábitos cumplidos por día (sin ajuste de meta).</div>
-  </div>
-  <div id="tableWrap" style="margin-top:1rem"></div>
-</main>
+  </header>
 
-<footer>Hecho para Pato · Offline · Exporta respaldo con “Backup”.</footer>
+  <main>
+    <!-- ===== Registrar (Simple Log) ===== -->
+    <section id="tab-registrar" aria-label="Registrar sesión">
+      <div class="grid">
+        <!-- Calendario compacto arriba -->
+        <div class="card" id="miniCalCard">
+          <div class="cal" id="miniCal">
+            <div class="dow">L</div><div class="dow">M</div><div class="dow">X</div><div class="dow">J</div><div class="dow">V</div><div class="dow">S</div><div class="dow">D</div>
+          </div>
+          <div class="row legend" style="margin-top:8px">
+            <span class="muted">Intensidad:</span>
+            <span class="sw" style="background:#0e162e"></span>
+            <span class="sw" style="background:#0f3a1e"></span>
+            <span class="sw" style="background:#156034"></span>
+            <span class="sw" style="background:#1f8b50"></span>
+            <span class="sw" style="background:#27b96b"></span>
+          </div>
+        </div>
 
-<!-- Modal Mapas -->
-<div id="modal" role="dialog" aria-modal="true">
-  <div class="modal-content">
-    <div class="modal-head">
-      <strong>Mapa de calor del mes</strong>
-      <div class="modal-actions">
-        <button id="dlCal">Descargar calendario PNG</button>
-        <button id="dlDonut">Descargar donut PNG</button>
-        <button id="dlBars">Descargar barras PNG</button>
-        <button id="closeModal">Cerrar</button>
+        <div class="panel">
+          <div class="row">
+            <div class="grow">
+              <label for="bodyWeight"><b>Peso corporal (kg)</b></label>
+              <input id="bodyWeight" type="number" step="0.1" min="20" max="300" />
+            </div>
+            <button class="btn small" id="btnNewToday">Nuevo (hoy)</button>
+            <button class="btn small" id="btnLoadBase">Cargar base</button>
+            <button class="btn small" id="btnSave">Guardar</button>
+          </div>
+        </div>
+
+        <!-- SIMPLE ADD (escribes series y kilos) -->
+        <div class="card simple" id="simpleAdd">
+          <label><b>Agregar ejercicio</b> <span class="hint">Nombre → Series (reps) → Pesos (kg) → Añadir</span></label>
+          <div class="grid">
+            <div>
+              <label for="saType">Tipo</label>
+              <select id="saType">
+                <option value="fuerza">Fuerza</option>
+                <option value="cardio">Cardio</option>
+              </select>
+            </div>
+            <div>
+              <label for="saName">Nombre de ejercicio</label>
+              <input id="saName" list="exList" placeholder="Ej: Press de pecho (máquina)">
+              <datalist id="exList"></datalist>
+            </div>
+            <div id="saFuerzaBlock">
+              <div>
+                <label for="saReps">Series (reps)</label>
+                <input id="saReps" placeholder="Ej: 12-12-10-10 ó 12,12,10,10" inputmode="numeric">
+              </div>
+              <div>
+                <label for="saWeights">Pesos (kg)</label>
+                <input id="saWeights" placeholder="Ej: 55-55-60-60 (step 0.5)" inputmode="decimal">
+              </div>
+              <div>
+                <label for="saCat">Categoría</label>
+                <select id="saCat">
+                  <option>Empuje</option><option>Jale</option><option>Aislamiento</option>
+                  <option>Pierna</option><option>Core</option>
+                </select>
+              </div>
+            </div>
+            <div id="saCardioBlock" hidden>
+              <div>
+                <label for="saSpeed">Velocidad (km/h)</label>
+                <input id="saSpeed" type="number" step="0.1" inputmode="decimal" placeholder="Ej: 6">
+              </div>
+              <div>
+                <label for="saGrade">Inclinación (%)</label>
+                <input id="saGrade" type="number" step="1" inputmode="numeric" placeholder="Ej: 6">
+              </div>
+              <div>
+                <label for="saMinutes">Minutos</label>
+                <input id="saMinutes" type="number" step="1" inputmode="numeric" placeholder="Ej: 10">
+              </div>
+            </div>
+            <button id="saAdd" class="btn primary block">Añadir</button>
+            <div class="hint" id="saHint">Serie #1</div>
+          </div>
+        </div>
+
+        <!-- Listado del día + resumen + cómo me sentí + nota -->
+        <div class="card">
+          <label><b>Sesión del día</b></label>
+          <div id="dayList"></div>
+
+          <div class="panel" style="margin-top:10px">
+            <label><b>Cómo me sentí</b> <span class="hint">(1=candado 🔒 / 10=🔥 súper fuerte)</span></label>
+            <div class="feel-wrap">
+              <div class="feel-row">
+                <div class="feel-emoji" id="feelEmoji">😐</div>
+                <input type="range" id="feelRange" min="1" max="10" step="1" value="7" aria-label="Cómo me sentí">
+                <span class="feel-chip" id="feelLabel">7 / 10</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:10px">
+            <label><b>Resumen</b></label>
+            <progress id="prog" max="100" value="0" style="width:100%; height:12px"></progress>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <span class="chip">Cumplimiento: <b id="progPct">0%</b></span>
+              <span class="chip">Kcal: <b id="kcalTotal">0</b></span>
+              <span class="chip" id="miniText">—</span>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:10px">
+            <label for="note"><b>Notas de salud / comentarios</b></label>
+            <textarea id="note" placeholder="Ej: rodilla OK, respiración nasal, etc."></textarea>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="modal-grid">
-      <div class="canvas-wrap">
-        <div class="canvas-head"><h4>Calendario (Lun–Dom)</h4></div>
-        <canvas id="calCanvas" width="900" height="600" aria-label="Calendario heatmap"></canvas>
+    </section>
+
+    <!-- ===== Calendario ===== -->
+    <section id="tab-calendario" hidden aria-label="Calendario">
+      <div class="grid">
+        <div class="card">
+          <div class="row" style="flex-wrap:wrap">
+            <button class="btn small" id="monPrev">◀</button>
+            <div class="chip" id="monLabel">—</div>
+            <button class="btn small" id="monNext">▶</button>
+          </div>
+          <div style="height:8px"></div>
+          <div class="cal" id="heatGrid" aria-label="Calendario heatmap" role="grid">
+            <div class="dow">L</div><div class="dow">M</div><div class="dow">X</div><div class="dow">J</div><div class="dow">V</div><div class="dow">S</div><div class="dow">D</div>
+          </div>
+          <div class="row legend" style="margin-top:8px">
+            <span class="muted">Intensidad:</span>
+            <span class="sw" style="background:#0e162e"></span>
+            <span class="sw" style="background:#0f3a1e"></span>
+            <span class="sw" style="background:#156034"></span>
+            <span class="sw" style="background:#1f8b50"></span>
+            <span class="sw" style="background:#27b96b"></span>
+          </div>
+        </div>
       </div>
-      <div class="canvas-wrap">
-        <div class="canvas-head"><h4>Donut mensual</h4></div>
-        <canvas id="donutCanvas" width="900" height="600" aria-label="Donut mensual"></canvas>
+    </section>
+
+    <!-- ===== Gráficos ===== -->
+    <section id="tab-graficos" hidden aria-label="Analítica por ejercicio">
+      <div class="grid">
+        <div class="card">
+          <div class="row">
+            <div class="grow">
+              <label for="exSelectAnalitica">Ejercicio</label>
+              <select id="exSelectAnalitica"></select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <div class="row">
+                <button class="btn small" data-metric="vol" id="btnVol">Volumen</button>
+                <button class="btn small" data-metric="top" id="btnTop">Mejor set</button>
+                <button class="btn small" data-metric="epley" id="btnEpley">1RM</button>
+              </div>
+            </div>
+          </div>
+          <canvas id="exChart" height="220"></canvas>
+        </div>
       </div>
-      <div class="canvas-wrap" style="grid-column:1/-1">
-        <div class="canvas-head"><h4>Barras por hábito (20 niveles)</h4></div>
-        <canvas id="barsCanvas" width="1400" height="420" aria-label="Barras por hábito"></canvas>
+    </section>
+
+    <!-- ===== Metas ===== -->
+    <section id="tab-metas" hidden aria-label="Metas mensuales">
+      <div class="grid">
+        <div class="card">
+          <label>Progreso vs Meta (mes actual)</label>
+          <canvas id="goalsChart" height="220"></canvas>
+        </div>
+        <div class="panel">
+          <div class="row" style="flex-wrap:wrap">
+            <button class="btn small" id="btnSetGoal">Editar meta del mes</button>
+            <div class="chip ok" id="goalBadge">Meta: —</div>
+          </div>
+          <div style="height:8px"></div>
+          <label>Texto guía</label>
+          <div id="goalText" class="muted" style="white-space:pre-wrap"></div>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- ===== Exportar ===== -->
+    <section id="tab-exportar" hidden aria-label="Exportar e importar">
+      <div class="grid">
+        <div class="card">
+          <label>CSV</label>
+          <div class="row" style="flex-wrap:wrap">
+            <button class="btn" id="csvDay">Exportar Día</button>
+            <button class="btn" id="csvMonth">Exportar Mes</button>
+            <button class="btn" id="csvAll">Exportar Total</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <input type="file" id="csvImport" accept=".csv" aria-label="Importar CSV del día">
+            <button class="btn" id="btnImport">Importar CSV del día</button>
+          </div>
+        </div>
+        <div class="card">
+          <label>Dashboard</label>
+          <div class="row" style="flex-wrap:wrap">
+            <button class="btn" id="btnPNG">Descargar Dashboard PNG</button>
+            <button class="btn" id="btnPDF">Imprimir / PDF</button>
+          </div>
+          <canvas id="dashCanvas" height="240" style="margin-top:10px"></canvas>
+        </div>
+        <div class="panel" id="datosDuros">
+          <label>Datos duros (día actual)</label>
+          <div id="rawDay"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist" aria-label="Pestañas">
+    <button class="active" data-tab="registrar" role="tab" aria-controls="tab-registrar" aria-selected="true"><span class="ico">📝</span>Registrar</button>
+    <button data-tab="calendario" role="tab" aria-controls="tab-calendario" aria-selected="false"><span class="ico">📆</span>Calendario</button>
+    <button data-tab="graficos" role="tab" aria-controls="tab-graficos" aria-selected="false"><span class="ico">📈</span>Gráficos</button>
+    <button data-tab="metas" role="tab" aria-controls="tab-metas" aria-selected="false"><span class="ico">🎯</span>Metas</button>
+    <button data-tab="exportar" role="tab" aria-controls="tab-exportar" aria-selected="false"><span class="ico">⤴️</span>Exportar</button>
+  </nav>
 </div>
-
-<!-- Modal Hábitos -->
-<div id="habitModal" role="dialog" aria-modal="true">
-  <div class="modal-content">
-    <div class="modal-head">
-      <strong>Hábitos (máx. 12)</strong>
-      <div class="modal-actions">
-        <button id="addHabit">Añadir</button>
-        <button id="saveHabit">Guardar</button>
-        <button id="closeHabit">Cerrar</button>
-      </div>
-    </div>
-    <div id="habitBody" class="grid"></div>
-  </div>
-</div>
-
-<!-- Tooltip (para barras/calendario) -->
-<div class="tooltip" id="tooltip"></div>
 
 <script>
-(()=>{
-// ---------- Utilidades ----------
-const QS=(s,d=document)=>d.querySelector(s), QSA=(s,d=document)=>[...d.querySelectorAll(s)];
-const LS=localStorage;
-const NOW=new Date();
-const MONTHS_ES=[..."Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic".split(" ")];
-const WD_ES=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const pad=n=>String(n).padStart(2,'0');
-const ymd=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
-const hex2rgb=h=>{h=h.replace('#','');if(h.length===3)h=[h[0]+h[0],h[1]+h[1],h[2]+h[2]].join('');const n=parseInt(h,16);return [(n>>16)&255,(n>>8)&255,n&255]};
-const rgb2hex=(r,g,b)=>"#"+[r,g,b].map(x=>pad(x.toString(16))).join('');
-const mix=(c1,c2,t)=>{const a=hex2rgb(c1),b=hex2rgb(c2);return rgb2hex(...a.map((v,i)=>Math.round(v+(b[i]-v)*t)))};
-const easeOutCubic=t=>1-Math.pow(1-t,3);
-const HEAT_RED="#ef4444",HEAT_YEL="#f59e0b",HEAT_GRN="#22c55e";
-const heatColor=p=>{
-  const x=clamp(p,0,100);
-  if(x<=50)return mix(HEAT_RED,HEAT_YEL,x/50);
-  return mix(HEAT_YEL,HEAT_GRN,(x-50)/50);
+/** =========================
+ *  PT Tracker — Simple Log
+ *  - Registro tipo "nota": escribes series y kilos
+ *  - Sin steppers; inputs libres
+ *  - Slider de "cómo me sentí" 1–10 con emojis/colores
+ *  - Recuerda último peso por ejercicio
+ *  - DRAFT en memoria para no perder lo añadido
+ *  ========================= */
+
+// ---------- Utilidades de fecha ----------
+const fmt = (d)=> d.toISOString().slice(0,10);
+const today = ()=> { const t = new Date(); t.setHours(12,0,0,0); return t; };
+const ymdToDate = (s)=> { const [Y,M,D]=s.split('-').map(Number); const d=new Date(Y, M-1, D); d.setHours(12,0,0,0); return d; };
+const ym = (d)=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+const startOfMonth = (d)=> new Date(d.getFullYear(), d.getMonth(), 1);
+const endOfMonth = (d)=> new Date(d.getFullYear(), d.getMonth()+1, 0);
+
+// ---------- Claves y estado ----------
+const LS = {
+  workouts: 'pt_workouts_v2',
+  exercises: 'pt_exercises_v2',
+  goals: 'pt_goals_v2',
+  base: 'pt_base_v2',
+  lastWeights: 'pt_last_weights_v1'
 };
-const getAccent=()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#2563eb';
+let ctxDate = today();
+let charts = { goals:null, ex:null };
+let dirty = false;
+let workDraft = null; // sesión en edición
 
-// ---------- Estado ----------
-let mode=LS.getItem('habit-mode')||'light';
-let view=LS.getItem('habit-view')||'month';
-let smooth=+LS.getItem('trend-smooth')||7;
-let habits=JSON.parse(LS.getItem('habit-list-weekly')||'[]'); // [{name,freq}]
-const monthSel=QS('#month'),yearSel=QS('#year');
+// ---------- Semillas ----------
+const SEED_EX = [
+  {exId:'ex_press_pecho_maquina', name:'Press pecho (máquina)', category:'Empuje'},
+  {exId:'ex_remo_sentado_polea', name:'Remo sentado (polea)', category:'Jale'},
+  {exId:'ex_curl_biceps_maquina', name:'Curl bíceps (máquina)', category:'Aislamiento'},
+  {exId:'ex_jalon_cerrado', name:'Jalón polea (agarre cerrado)', category:'Jale'},
+  {exId:'ex_press_hombros_maquina', name:'Press hombros (máquina)', category:'Empuje'},
+  {exId:'ex_crunch_hummett', name:'Crunch en máquina (Hummett)', category:'Core'},
+  {exId:'ex_extension_piernas', name:'Extensión de piernas', category:'Pierna'},
+  {exId:'ex_rdl_barra', name:'Peso muerto rumano (barra)', category:'Pierna'},
+  {exId:'ex_cinta', name:'Cinta (cardio)', category:'Cardio'},
+];
+const AUG_TEXT = `Asistencia: ≥10 sesiones (óptimo 12–13).
+Cargas/volumen (fin de agosto):
+- Press pecho: 4×(12–12–10–10) con 55–55–57.5–57.5 kg (RPE 8–9 última).
+- Remo sentado: 4×12 con 54–54–56–56 kg (o 1–2 series a 56 kg).
+- Curl bíceps: 40 kg en ≥3×12 (RPE 8).
+- Jalón cerrado: 4×(12–12–10–10) con 42.5–45 kg.
+- Press hombros: 4×10 con 32.5–35–35–35 kg.
+- Crunch: 4×15 con 35 kg (últimas 2 a 37.5 kg si cómodo).
+- Extensión de piernas: 3×15 con 40 kg (2s iso arriba).
+- RDL: 3×12 con 32.5–35 kg (técnica/rodilla OK).
+RPE: promedio 7–8; ≥1 top set a RPE 8–9 por ejercicio clave.
+Cardio: 10′ post fuerza @ 6 km/h, 7% → ≥80% de sesiones.
+Rodilla: 0 dolor; sin correr; OK caminata inclinada; priorizar RDL técnico + extensiones; movilidad.`;
+const SEED_BASE_AUG = [
+  { exId:'ex_cinta', name:'Cinta (cardio)', category:'Cardio', sets:[{speed:5.5, grade:6, minutes:8, rpe:6}] },
+  { exId:'ex_press_pecho_maquina', name:'Press pecho (máquina)', category:'Empuje', sets:[{weight:50,reps:12,rpe:7},{weight:52.5,reps:12,rpe:7.5},{weight:52.5,reps:10,rpe:8},{weight:55,reps:10,rpe:8}] },
+  { exId:'ex_remo_sentado_polea', name:'Remo sentado (polea)', category:'Jale', sets:[{weight:52,reps:12,rpe:7},{weight:52,reps:12,rpe:7.5},{weight:54,reps:10,rpe:8},{weight:54,reps:10,rpe:8}] },
+  { exId:'ex_curl_biceps_maquina', name:'Curl bíceps (máquina)', category:'Aislamiento', sets:[{weight:35,reps:12,rpe:7},{weight:35,reps:12,rpe:7.5},{weight:37.5,reps:12,rpe:8},{weight:37.5,reps:12,rpe:8}] },
+  { exId:'ex_jalon_cerrado', name:'Jalón polea (agarre cerrado)', category:'Jale', sets:[{weight:40,reps:12,rpe:7},{weight:40,reps:12,rpe:7.5},{weight:40,reps:10,rpe:8},{weight:40,reps:10,rpe:8}] },
+  { exId:'ex_press_hombros_maquina', name:'Press hombros (máquina)', category:'Empuje', sets:[{weight:30,reps:12,rpe:7},{weight:30,reps:12,rpe:7.5},{weight:32.5,reps:10,rpe:8},{weight:32.5,reps:10,rpe:8}] },
+  { exId:'ex_crunch_hummett', name:'Crunch en máquina (Hummett)', category:'Core', sets:[{weight:30,reps:15,rpe:7},{weight:30,reps:15,rpe:7},{weight:30,reps:15,rpe:7.5},{weight:35,reps:15,rpe:8}] },
+  { exId:'ex_extension_piernas', name:'Extensión de piernas', category:'Pierna', sets:[{weight:35,reps:15,rpe:7},{weight:35,reps:12,rpe:7.5},{weight:35,reps:12,rpe:8}] },
+  { exId:'ex_rdl_barra', name:'Peso muerto rumano (barra)', category:'Pierna', sets:[{weight:30,reps:12,rpe:7},{weight:30,reps:12,rpe:7.5},{weight:30,reps:12,rpe:8}] },
+  { exId:'ex_cinta', name:'Cinta (cardio)', category:'Cardio', sets:[{speed:6, grade:7, minutes:10, rpe:7}] },
+];
 
-document.body.dataset.mode=mode;
-QS('#modeBtn').textContent = mode==='light'?'Oscuro':'Claro';
-QS('#smooth').value=String(smooth);
-QS('#smoothLabel').textContent=String(smooth);
-
-(function fillSelectors(){
-  // Meses (mostrar nombres en español, valor 0..11)
-  for(let m=0;m<12;m++){
-    const op=document.createElement('option');
-    op.value=String(m);
-    op.textContent=new Date(2024,m,1).toLocaleString('es',{month:'long'});
-    monthSel.append(op);
-  }
-  // Años (rango centrado alrededor del año actual)
-  for(let y=NOW.getFullYear()-3;y<=NOW.getFullYear()+1;y++){
-    const op=document.createElement('option');op.value=String(y);op.textContent=String(y);yearSel.append(op);
-  }
-  monthSel.value=String(NOW.getMonth());
-  yearSel.value=String(NOW.getFullYear());
-})();
-
-// ---------- Almacenamiento por mes ----------
-const keyMonth=(y,m)=>`habit-weekly-v3:${y}-${pad(m+1)}`;
-const getMonthData=(y,m)=>JSON.parse(LS.getItem(keyMonth(y,m))||'{}');
-const setMonthData=(y,m,obj)=>LS.setItem(keyMonth(y,m),JSON.stringify(obj));
-
-// ---------- Semanas "naturales" dentro del mes (bloques 1-7, 8-14, etc.) ----------
-const monthBlocks=(y,m)=>{
-  const days=new Date(y,m+1,0).getDate();
-  const blocks=[];
-  for(let start=1;start<=days;start+=7){
-    const end=Math.min(start+6,days);
-    const arr=[];for(let d=start;d<=end;d++)arr.push(d);
-    blocks.push(arr);
-  }
-  return blocks;
-};
-
-// ---------- Cálculos por hábito (goal, weighted, raw, pct) ----------
-function habitStats(y,m,idx){
-  const h=habits[idx]; if(!h){return {goal:0,weighted:0,raw:0,pct:0};}
-  const data=getMonthData(y,m);
-  const blocks=monthBlocks(y,m);
-  let goal=0,weighted=0,raw=0;
-  for(const week of blocks){
-    const g=Math.min(h.freq, week.length);
-    goal+=g;
-    let cnt=0;
-    for(const d of week){
-      const k=`${ymd(y,m,d)}:${idx}`;
-      if(data[k]) cnt++;
-    }
-    raw+=cnt;
-    weighted+=Math.min(cnt,g);
-  }
-  const pct = goal>0 ? Math.min(100, Math.round(100*weighted/goal)) : (raw>0?100:0);
-  return {goal,weighted,raw,pct};
+// ---------- Storage helpers ----------
+const readLS = (k, def)=> { try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? def; } catch(e){ return def; } };
+const writeLS = (k, v)=> localStorage.setItem(k, JSON.stringify(v));
+function ensureSeeds(){
+  if(!readLS(LS.exercises)) writeLS(LS.exercises, SEED_EX);
+  if(!readLS(LS.workouts)) writeLS(LS.workouts, []);
+  if(!readLS(LS.goals)) writeLS(LS.goals, {});
+  if(!readLS(LS.base)) writeLS(LS.base, SEED_BASE_AUG);
+  if(!readLS(LS.lastWeights)) writeLS(LS.lastWeights, {});
 }
+ensureSeeds();
 
-// ---------- Cálculo total del mes ----------
-function totalsStats(y,m){
-  let goal=0,weighted=0,raw=0;
-  for(let i=0;i<habits.length;i++){
-    const s=habitStats(y,m,i);
-    goal+=s.goal; weighted+=s.weighted; raw+=s.raw;
-  }
-  const pct = goal>0 ? Math.min(100, Math.round(100*weighted/goal)) : 0;
-  return {goal,weighted,raw,pct};
+const getWorkouts = ()=> readLS(LS.workouts, []);
+const setWorkouts = (arr)=> writeLS(LS.workouts, arr);
+const getExercises = ()=> readLS(LS.exercises, []);
+const setExercises = (arr)=> writeLS(LS.exercises, arr);
+const getGoals = ()=> readLS(LS.goals, {});
+const setGoals = (obj)=> writeLS(LS.goals, obj);
+const getBase = ()=> readLS(LS.base, []);
+const setBase = (items)=> writeLS(LS.base, items);
+const getLastWeights = ()=> readLS(LS.lastWeights, {});
+const setLastWeights = (obj)=> writeLS(LS.lastWeights, obj);
+
+const defaultWorkout = (date)=> ({ id:'w_'+date, date, bodyWeight:74, note:'', feel:7, items:[], indicators:{volume_total_kg:0, topSet:0, rpeAvg:0, cardioMin:0} });
+
+// ---------- Cálculos ----------
+function kcalCardioSet(speed_kmh, incline_pct, minutes, bw){
+  const v = speed_kmh * 1000 / 60; const grade = (incline_pct||0)/100;
+  const VO2 = 3.5 + 0.1*v + 1.8*v*grade;
+  const kcal = (VO2 * bw / 200) * minutes;
+  return isFinite(kcal)? kcal : 0;
 }
-
-// ---------- % diario (sin ajuste) ----------
-function dailyPercents(y,m){
-  const nHab=habits.length;
-  const days=new Date(y,m+1,0).getDate();
-  if(nHab===0){ return new Array(days).fill(0); }
-  const data=getMonthData(y,m);
-  const arr=[];
-  for(let d=1;d<=days;d++){
-    let c=0;
-    for(let i=0;i<nHab;i++){
-      if(data[`${ymd(y,m,d)}:${i}`]) c++;
-    }
-    arr.push( Math.round(100*c/nHab) );
-  }
-  return arr;
+function kcalStrengthSet(rpe, bw){
+  const MET = (rpe>=8)? 6 : 4.5; const minutes = 1.75;
+  const kcal = MET*3.5*bw/200*minutes;
+  return isFinite(kcal)? kcal : 0;
 }
-
-// ---------- Media móvil centrada ----------
-function movingAvg(arr,k){
-  if(k<=1)return arr.slice();
-  const out=[];
-  const r=Math.floor(k/2);
-  for(let i=0;i<arr.length;i++){
-    let s=0,c=0;
-    for(let j=i-r;j<=i+r;j++){
-      if(j>=0&&j<arr.length){s+=arr[j];c++;}
-    }
-    out.push(Math.round(s/c));
-  }
-  return out;
-}
-
-// ---------- Tendencia SVG (Catmull–Rom → Bezier) ----------
-function pathFromPoints(pts){
-  if(pts.length<2) return '';
-  const d=[];
-  d.push(`M ${pts[0][0]} ${pts[0][1]}`);
-  for(let i=0;i<pts.length-1;i++){
-    const p0=pts[i-1]||pts[i];
-    const p1=pts[i];
-    const p2=pts[i+1];
-    const p3=pts[i+2]||p2;
-    const cp1x=p1[0]+(p2[0]-p0[0])/6;
-    const cp1y=p1[1]+(p2[1]-p0[1])/6;
-    const cp2x=p2[0]-(p3[0]-p1[0])/6;
-    const cp2y=p2[1]-(p3[1]-p1[1])/6;
-    d.push(`C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`);
-  }
-  return d.join(' ');
-}
-
-function renderTrend(y,m){
-  const wrap=QS('#trendWrap'); wrap.innerHTML='';
-  const w=wrap.clientWidth||600, h=160, padL=24, padR=10, padT=12, padB=22;
-  const data=dailyPercents(y,m);
-  const smoothArr=movingAvg(data, smooth);
-  const maxY=100, minY=0;
-  const mapX=i=>padL + (i*(w-padL-padR))/(Math.max(1,data.length-1));
-  const mapY=v=>padT + (maxY-v)*(h-padT-padB)/(maxY-minY);
-
-  const pts=smoothArr.map((v,i)=>[mapX(i), mapY(v)]);
-  const path=pathFromPoints(pts);
-  const accent=getAccent();
-
-  // SVG
-  const svgNS='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(svgNS,'svg');
-  svg.setAttribute('width','100%'); svg.setAttribute('height',h); svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
-
-  // grid (25%)
-  const grid=document.createElementNS(svgNS,'g');
-  [0,25,50,75,100].forEach(val=>{
-    const y=mapY(val);
-    const line=document.createElementNS(svgNS,'line');
-    line.setAttribute('x1',String(padL)); line.setAttribute('x2',String(w-padR));
-    line.setAttribute('y1',String(y)); line.setAttribute('y2',String(y));
-    line.setAttribute('stroke','var(--grid)'); line.setAttribute('stroke-width','1');
-    grid.appendChild(line);
-
-    const txt=document.createElementNS(svgNS,'text');
-    txt.setAttribute('x',String(4)); txt.setAttribute('y',String(y+4));
-    txt.setAttribute('fill','var(--muted)'); txt.setAttribute('font-size','10');
-    txt.textContent=`${val}%`;
-    grid.appendChild(txt);
-  });
-  svg.appendChild(grid);
-
-  // gradient
-  const defs=document.createElementNS(svgNS,'defs');
-  const grad=document.createElementNS(svgNS,'linearGradient');
-  grad.setAttribute('id','trendGrad');
-  grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
-  grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
-  const s1=document.createElementNS(svgNS,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color',accent); s1.setAttribute('stop-opacity','0.35');
-  const s2=document.createElementNS(svgNS,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color',accent); s2.setAttribute('stop-opacity','0.02');
-  grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
-
-  // area
-  if(pts.length>=2){
-    const area=document.createElementNS(svgNS,'path');
-    const baseY=mapY(0);
-    area.setAttribute('d', `${path} L ${pts[pts.length-1][0]} ${baseY} L ${pts[0][0]} ${baseY} Z`);
-    area.setAttribute('fill','url(#trendGrad)');
-    svg.appendChild(area);
-  }
-  // line
-  const line=document.createElementNS(svgNS,'path');
-  line.setAttribute('d', path);
-  line.setAttribute('fill','none');
-  line.setAttribute('stroke',accent);
-  line.setAttribute('stroke-width','2.2');
-  svg.appendChild(line);
-
-  wrap.appendChild(svg);
-}
-
-// ---------- UI: Totales y Tip ----------
-function renderTotals(y,m){
-  const t=totalsStats(y,m);
-  const host=QS('#totals'); host.innerHTML='';
-  const card=document.createElement('div'); card.className='card';
-  const top=document.createElement('div'); top.style.display='flex'; top.style.justifyContent='space-between'; top.style.alignItems='center';
-  const title=document.createElement('strong'); title.textContent='Progreso total (ajustado a metas semanales)';
-  const badge=document.createElement('span'); badge.className='badge'; badge.textContent=`${t.pct}%`;
-  top.appendChild(title); top.appendChild(badge);
-
-  const bar=document.createElement('div'); bar.className='progress'; bar.style.margin='.6rem 0';
-  const fill=document.createElement('span'); fill.style.width=`${t.pct}%`; bar.appendChild(fill);
-
-  const sub=document.createElement('div'); sub.className='small'; sub.textContent=`${t.weighted}/${t.goal} (weighted/goal) · Crudo: ${t.raw}`;
-  const tip=document.createElement('div'); tip.className='tip'; tip.textContent='TIP: El “cap” semanal limita los checks por semana al máximo definido por la meta semanal del hábito. El porcentaje se calcula con Weighted/Goal y se limita a 100%.';
-  card.append(top,bar,sub,tip);
-  host.appendChild(card);
-}
-
-// ---------- Tabla mensual ----------
-function renderMonth(y,m){
-  const tableWrap=QS('#tableWrap'); tableWrap.innerHTML='';
-  const nHab=habits.length;
-  const days=new Date(y,m+1,0).getDate();
-  const data=getMonthData(y,m);
-
-  // tabla
-  const tbl=document.createElement('table');
-  const thead=document.createElement('thead');
-  const htr=document.createElement('tr');
-  const thDay=document.createElement('th'); thDay.textContent='Día'; htr.appendChild(thDay);
-
-  habits.forEach((h,i)=>{
-    const th=document.createElement('th');
-    const b=habitStats(y,m,i);
-    th.innerHTML=`<div style="display:flex;gap:.35rem;align-items:center;justify-content:center"><span>${h.name}</span><span class="badge">${b.pct}%</span></div>`;
-    htr.appendChild(th);
-  });
-  thead.appendChild(htr); tbl.appendChild(thead);
-
-  const tbody=document.createElement('tbody');
-  for(let d=1;d<=days;d++){
-    const tr=document.createElement('tr');
-    if(y===NOW.getFullYear() && m===NOW.getMonth() && d===NOW.getDate()) tr.classList.add('today');
-    const dayCell=document.createElement('th'); dayCell.textContent=`${d} (${WD_ES[new Date(y,m,d).getDay()]})`; dayCell.style.whiteSpace='nowrap';
-    tr.appendChild(dayCell);
-    for(let i=0;i<nHab;i++){
-      const td=document.createElement('td');
-      const chk=document.createElement('input'); chk.type='checkbox';
-      const k=`${ymd(y,m,d)}:${i}`;
-      chk.checked=!!data[k];
-      chk.addEventListener('change', (ev)=>{
-        data[k]=chk.checked; setMonthData(y,m,data);
-        miniConfetti(ev.clientX, ev.clientY);
-        refreshAll(); // badges, totales, tendencia
-      });
-      td.appendChild(chk);
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  tbl.appendChild(tbody);
-  tableWrap.appendChild(tbl);
-}
-
-// ---------- Vista anual ----------
-function renderYear(y){
-  const tableWrap=QS('#tableWrap'); tableWrap.innerHTML='';
-  const grid=document.createElement('div'); grid.className='grid'; grid.style.gridTemplateColumns='repeat(auto-fill,minmax(220px,1fr))';
-  for(let m=0;m<12;m++){
-    const t=totalsStats(y,m);
-    const card=document.createElement('div'); card.className='card'; card.style.cursor='pointer';
-    const head=document.createElement('div'); head.style.display='flex'; head.style.justifyContent='space-between'; head.style.alignItems='center';
-    const title=document.createElement('strong'); title.textContent=new Date(y,m,1).toLocaleString('es',{month:'long'});
-    const badge=document.createElement('span'); badge.className='badge'; badge.textContent=`${t.pct}%`;
-    head.append(title,badge);
-    const bar=document.createElement('div'); bar.className='progress'; bar.style.margin='.6rem 0';
-    const fill=document.createElement('span'); fill.style.width=`${t.pct}%`; bar.appendChild(fill);
-    const sub=document.createElement('div'); sub.className='small'; sub.textContent=`${t.weighted}/${t.goal} (weighted/goal)`;
-    card.append(head,bar,sub);
-    card.addEventListener('click',()=>{
-      monthSel.value=String(m); view='month'; LS.setItem('habit-view',view); refreshAll();
-      setTimeout(scrollToToday, 60);
-    });
-    grid.appendChild(card);
-  }
-  tableWrap.appendChild(grid);
-}
-
-// ---------- Render principal ----------
-function refreshAll(){
-  const y=+yearSel.value, m=+monthSel.value;
-  renderTotals(y,m);
-  if(view==='month') renderMonth(y,m); else renderYear(y);
-  renderTrend(y,m);
-}
-
-// ---------- Scroll a hoy ----------
-function scrollToToday(){
-  const row=QS('tbody tr.today');
-  if(row) row.scrollIntoView({behavior:'smooth', block:'center'});
-}
-
-// ---------- Confeti mini ----------
-function miniConfetti(x,y){
-  const colors=[getAccent(),'#10b981','#f59e0b','#ef4444'];
-  for(let i=0;i<10;i++){
-    const s=document.createElement('span');
-    s.style.position='fixed'; s.style.left=`${x}px`; s.style.top=`${y}px`;
-    s.style.width='6px'; s.style.height='6px'; s.style.borderRadius='50%';
-    s.style.background=colors[i%colors.length]; s.style.pointerEvents='none'; s.style.zIndex='60';
-    document.body.appendChild(s);
-    const dx=(Math.random()*2-1)*80, dy=(Math.random()*-1)*100-40, rot=(Math.random()*360);
-    const dur=600+Math.random()*500;
-    s.animate([{transform:`translate(0,0) rotate(0deg)`,opacity:1},{transform:`translate(${dx}px,${dy}px) rotate(${rot}deg)`,opacity:0}],{duration:dur,easing:'cubic-bezier(.05,.6,.2,1)'});
-    setTimeout(()=>s.remove(), dur+30);
-  }
-}
-
-// ---------- Modal Hábitos ----------
-function openHabitModal(){
-  const modal=QS('#habitModal'); const body=QS('#habitBody'); body.innerHTML='';
-  const list=document.createElement('div'); list.className='grid';
-  habits.forEach((h,i)=>{
-    const row=document.createElement('div'); row.className='card'; row.style.display='grid'; row.style.gridTemplateColumns='1fr 90px 34px'; row.style.gap='.6rem'; row.style.alignItems='center';
-    const name=document.createElement('input'); name.value=h.name; name.placeholder='Nombre (puede incluir emoji)';
-    const freq=document.createElement('input'); freq.type='number'; freq.min='0'; freq.max='7'; freq.value=String(h.freq); freq.style.textAlign='center';
-    const del=document.createElement('button'); del.textContent='×'; del.title='Eliminar';
-    del.addEventListener('click',()=>{habits.splice(i,1); openHabitModal();});
-    row.append(name,freq,del);
-    list.appendChild(row);
-  });
-  body.appendChild(list);
-  modal.style.display='flex';
-
-  QS('#addHabit').onclick=()=>{
-    if(habits.length>=12) return;
-    habits.push({name:'Nuevo hábito', freq:3});
-    openHabitModal();
-  };
-  QS('#saveHabit').onclick=()=>{
-    const rows=[...body.querySelectorAll('.card')];
-    habits=rows.map(r=>{
-      const [nm,fr]=[r.children[0].value, clamp(+r.children[1].value,0,7)];
-      return {name:nm.trim()||'Hábito', freq:fr};
-    });
-    LS.setItem('habit-list-weekly', JSON.stringify(habits));
-    closeHabitModal();
-    refreshAll();
-  };
-  QS('#closeHabit').onclick=closeHabitModal;
-  modal.addEventListener('click', e=>{ if(e.target===modal) closeHabitModal(); });
-}
-function closeHabitModal(){ QS('#habitModal').style.display='none'; }
-
-// ---------- Modal Heatmap (calendario + donut + barras) ----------
-let barsHit=[]; // bboxes para tooltip
-function openHeatmap(){
-  const modal=QS('#modal'); modal.style.display='flex';
-  QS('#closeModal').onclick=()=>modal.style.display='none';
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.style.display='none'; });
-  const y=+yearSel.value, m=+monthSel.value;
-  drawCalendar(y,m);
-  drawDonut(y,m);
-  drawBars(y,m);
-}
-function drawCalendar(y,m){
-  const cnv=QS('#calCanvas'), ctx=cnv.getContext('2d');
-  const W=cnv.width, H=cnv.height;
-  ctx.clearRect(0,0,W,H);
-  const accent=getAccent();
-  const dpc=dailyPercents(y,m);
-  const firstDow=(new Date(y,m,1).getDay()+6)%7; // 0=Mon .. 6=Sun
-  const days=new Date(y,m+1,0).getDate();
-  const cols=7, rows=Math.ceil((firstDow+days)/7);
-  const pad=40, cellW=(W-pad-10)/cols, cellH=(H-pad-10)/Math.max(rows,5);
-
-  // títulos
-  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg');
-  ctx.font='16px system-ui';
-  ctx.fillText(new Date(y,m,1).toLocaleString('es',{month:'long',year:'numeric'}), 10, 24);
-  ctx.font='12px system-ui';
-  const wd=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-  wd.forEach((w,i)=>{ ctx.fillText(w, pad + i*cellW + 6, 40); });
-
-  // celdas
-  let day=1;
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const idx=r*cols+c;
-      const x=pad + c*cellW, y0=50 + r*cellH;
-      let valid = (r>0 || c>=firstDow) && day<=days;
-      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--grid');
-      ctx.lineWidth=1;
-      ctx.strokeRect(x, y0, cellW-6, cellH-6);
-      if(valid){
-        const p=dpc[day-1]||0;
-        const col=heatColor(p);
-        ctx.fillStyle=col; ctx.globalAlpha=0.85; ctx.fillRect(x, y0, cellW-6, cellH-6); ctx.globalAlpha=1;
-        ctx.fillStyle='#000000';
-        const fg=getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
-        ctx.fillStyle=fg||'#111';
-        ctx.font='11px system-ui';
-        ctx.fillText(String(day), x+6, y0+14);
-        day++;
+function epley1RM(w, r){ return (w && r)? w*(1+r/30):0; }
+function countBaseSets(){ return getBase().reduce((a,b)=> a+(b.sets?.length||0),0); }
+function computeIndicators(workout){
+  let vol=0, top=0, rpeList=[], cardioMin=0, kcal=0, doneCount=0, baseTotalSets=countBaseSets();
+  const bw = Number(workout.bodyWeight||74);
+  for(const it of workout.items){
+    if(it.category==='Cardio'){
+      for(const s of it.sets){
+        if(!isFinite(Number(s.minutes))) continue;
+        cardioMin += Number(s.minutes)||0;
+        kcal += kcalCardioSet(Number(s.speed||0), Number(s.grade||0), Number(s.minutes||0), bw);
+        if(s.done) doneCount++;
       }
-    }
-  }
-  // descarga
-  QS('#dlCal').onclick=()=>downloadCanvas(cnv,`cal-${y}-${pad(m+1)}.png`);
-}
-
-function drawDonut(y,m){
-  const cnv=QS('#donutCanvas'), ctx=cnv.getContext('2d');
-  const W=cnv.width, H=cnv.height;
-  ctx.clearRect(0,0,W,H);
-  const cx=W/2, cy=H/2, r=Math.min(W,H)*0.28, rIn=r*0.6;
-  // conteos por hábito
-  const days=new Date(y,m+1,0).getDate(), data=getMonthData(y,m);
-  const counts=habits.map((_,i)=>{
-    let c=0; for(let d=1;d<=days;d++) if(data[`${ymd(y,m,d)}:${i}`]) c++;
-    return c;
-  });
-  const total=counts.reduce((a,b)=>a+b,0);
-
-  // título
-  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg');
-  ctx.font='16px system-ui'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-  ctx.fillText('Donut de participación mensual', 10, 24);
-
-  if(total===0){
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='14px system-ui';
-    ctx.fillText('Sin datos este mes', cx, cy);
-    QS('#dlDonut').onclick=()=>downloadCanvas(cnv,`donut-${y}-${pad(m+1)}.png`);
-    return;
-  }
-
-  // arcos
-  let start=-Math.PI/2;
-  for(let i=0;i<habits.length;i++){
-    if(counts[i]===0) continue;
-    const frac=counts[i]/total;
-    const end=start+frac*2*Math.PI;
-    const p=easeOutCubic(Math.min(1, counts[i]/(days))); // sesgo suave opcional
-    const col=heatColor( clamp(100*p,0,100) );
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath();
-    ctx.fillStyle=col; ctx.globalAlpha=0.9; ctx.fill(); ctx.globalAlpha=1;
-    start=end;
-  }
-  // agujero
-  ctx.globalCompositeOperation='destination-out';
-  ctx.beginPath(); ctx.arc(cx,cy,rIn,0,Math.PI*2); ctx.fill();
-  ctx.globalCompositeOperation='source-over';
-
-  // etiqueta centro
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg');
-  ctx.font='bold 22px system-ui'; ctx.fillText(`${total}`, cx, cy-4);
-  ctx.font='12px system-ui'; ctx.fillText('checks', cx, cy+14);
-
-  QS('#dlDonut').onclick=()=>downloadCanvas(cnv,`donut-${y}-${pad(m+1)}.png`);
-}
-
-function drawBars(y,m){
-  const cnv=QS('#barsCanvas'), ctx=cnv.getContext('2d');
-  const W=cnv.width, H=cnv.height;
-  ctx.clearRect(0,0,W,H);
-  barsHit.length=0;
-
-  // marco
-  const padL=54, padR=14, padT=18, padB=36;
-  // ejes y grilla
-  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--grid'); ctx.lineWidth=1;
-  [0,25,50,75,100].forEach(v=>{
-    const yv=padT + (100-v)*(H-padT-padB)/100;
-    ctx.beginPath(); ctx.moveTo(padL,yv); ctx.lineTo(W-padR,yv); ctx.stroke();
-    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted'); ctx.font='10px system-ui';
-    ctx.fillText(`${v}%`, 6, yv+3);
-  });
-  // meta 100% (discontinua)
-  ctx.setLineDash([6,4]); ctx.strokeStyle=getAccent(); ctx.lineWidth=1.2;
-  const y100=padT + 0*(H-padT-padB); ctx.beginPath(); ctx.moveTo(padL,y100); ctx.lineTo(W-padR,y100); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // columnas
-  const n=Math.max(1,habits.length);
-  const colW=(W-padL-padR)/n;
-  const baseY=padT + (H-padT-padB);
-
-  for(let i=0;i<habits.length;i++){
-    const s=habitStats(y,m,i);
-    const pct=s.pct;
-    const biased=easeOutCubic(pct/100)*100;
-    const col=heatColor(biased);
-    const x=padL + i*colW;
-    const innerPad=10;
-    const bw=colW-innerPad;
-    const levels=20;
-    const bh=(H-padT-padB)/levels;
-    const filled=Math.round((pct/100)*levels);
-    // guardar bbox para tooltip
-    barsHit.push({i,x:x,y:padT,w:bw,h:H-padT-padB,s});
-
-    // bloques
-    for(let lv=0; lv<levels; lv++){
-      const yBlock=baseY - (lv+1)*bh + 2;
-      ctx.fillStyle= lv<filled ? col : getComputedStyle(document.documentElement).getPropertyValue('--grid');
-      ctx.globalAlpha= lv<filled ? 0.92 : 0.55;
-      ctx.fillRect(x+innerPad/2, yBlock, bw, bh-4);
-      ctx.globalAlpha=1;
-    }
-
-    // etiqueta superior
-    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg');
-    ctx.font='bold 12px system-ui'; ctx.textAlign='center';
-    ctx.fillText(`${pct}%`, x+colW/2, padT-2);
-    ctx.font='10px system-ui';
-    ctx.fillText(`${s.weighted}/${s.goal}`, x+colW/2, padT+12);
-
-    // borde dorado + estrella si sobrecumple (raw > goal)
-    if(s.raw > s.goal){
-      ctx.strokeStyle='#fcd34d'; ctx.lineWidth=2;
-      ctx.strokeRect(x+innerPad/2-2, padT-2, bw+4, H-padT-padB+4);
-      // estrella
-      const starX=x+colW/2, starY=padT-16, R=8, r=4;
-      ctx.beginPath();
-      for(let k=0;k<10;k++){
-        const ang=Math.PI/2 + k*Math.PI/5;
-        const rad = (k%2===0)?R:r;
-        const px=starX + rad*Math.cos(ang);
-        const py=starY - rad*Math.sin(ang);
-        if(k===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-      }
-      ctx.closePath(); ctx.fillStyle='#fcd34d'; ctx.strokeStyle='#a16207'; ctx.lineWidth=1;
-      ctx.fill(); ctx.stroke();
-    }
-
-    // nombre hábito (x)
-    ctx.textAlign='center'; ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg');
-    ctx.font='11px system-ui';
-    let nm=habits[i].name; if(nm.length>12) nm=nm.slice(0,11)+'…';
-    ctx.fillText(nm, x+colW/2, H-12);
-  }
-
-  // tooltip
-  const tip=QS('#tooltip');
-  cnv.onmousemove=(e)=>{
-    const rect=cnv.getBoundingClientRect();
-    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-    let hit=-1;
-    for(let k=0;k<barsHit.length;k++){
-      const b=barsHit[k];
-      if(mx>=b.x && mx<=b.x+b.w+10 && my>=b.y && my<=b.y+b.h){ hit=k; break; }
-    }
-    if(hit>=0){
-      const b=barsHit[hit], s=b.s, name=habits[b.i].name;
-      tip.innerHTML=`<div><strong>${name}</strong></div><div>${s.pct}% (${s.weighted}/${s.goal})</div><div class="small">Crudo: ${s.raw}</div>`;
-      tip.style.display='block';
-      tip.style.left = `${e.clientX+12}px`;
-      tip.style.top  = `${e.clientY+12}px`;
     }else{
-      tip.style.display='none';
-    }
-  };
-  cnv.onmouseleave=()=>{ QS('#tooltip').style.display='none'; };
-
-  QS('#dlBars').onclick=()=>downloadCanvas(cnv,`barras-${y}-${pad(m+1)}.png`);
-}
-
-// ---------- Descarga canvas ----------
-function downloadCanvas(cnv,fn){
-  const a=document.createElement('a');
-  a.href=cnv.toDataURL('image/png');
-  a.download=fn; a.click();
-}
-
-// ---------- Export / Import / CSV ----------
-function doBackup(){
-  const dump={};
-  for(const [k,v] of Object.entries(LS)){
-    if(k.startsWith('habit-weekly-v3') || k==='habit-list-weekly' || k==='habit-mode' || k==='habit-view' || k==='trend-smooth'){
-      dump[k]=v;
+      for(const s of it.sets){
+        const W=Number(s.weight||0), R=Number(s.reps||0), E=Number(s.rpe||workout.feel||7);
+        vol += W*R; top=Math.max(top,W);
+        if(E) rpeList.push(E);
+        kcal += kcalStrengthSet(E, bw);
+        if(s.done) doneCount++;
+      }
     }
   }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(dump,null,0)],{type:'application/json'}));
-  a.download='backup.json'; a.click();
-}
-function doImport(){
-  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
-  inp.onchange=()=>{
-    const f=inp.files[0]; if(!f) return;
-    const fr=new FileReader();
-    fr.onload=()=>{
-      try{
-        const obj=JSON.parse(fr.result);
-        for(const k in obj) LS.setItem(k,obj[k]);
-        location.reload();
-      }catch(err){ alert('JSON inválido'); }
-    };
-    fr.readAsText(f);
-  };
-  inp.click();
-}
-function exportCSV(){
-  const y=+yearSel.value, m=+monthSel.value, days=new Date(y,m+1,0).getDate();
-  let out='Fecha,Día,'+habits.map(h=>'"'+h.name.replace(/"/g,'""')+'"').join(',')+'\n';
-  const data=getMonthData(y,m);
-  for(let d=1;d<=days;d++){
-    const date=new Date(y,m,d);
-    const row=[ymd(y,m,d), WD_ES[date.getDay()], ...habits.map((_,i)=>data[`${ymd(y,m,d)}:${i}`]?1:0)];
-    out+=row.join(',')+'\n';
-  }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([out],{type:'text/csv'}));
-  a.download=`habits-${y}-${pad(m+1)}.csv`; a.click();
+  const rpeAvg = rpeList.length? (rpeList.reduce((a,b)=>a+b,0)/rpeList.length) : 0;
+  const progPct = baseTotalSets? Math.round((doneCount/baseTotalSets)*100) : 0;
+  workout.indicators = { volume_total_kg: Math.round(vol), topSet: top, rpeAvg: Number(rpeAvg.toFixed(2)), cardioMin: Math.round(cardioMin) };
+  return { kcalTotal: Math.round(kcal), progPct, doneCount, baseTotalSets };
 }
 
-// ---------- PWA (manifest + service worker) ----------
-function setupPWA(){
-  const manifest={
-    name:"Habit Tracker",
-    short_name:"Habits",
-    start_url:"./",
-    display:"standalone",
-    background_color:getAccent(),
-    theme_color:getAccent(),
-    icons:[{
-      src:`data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='${getAccent()}'/><stop offset='1' stop-color='#60a5fa'/></linearGradient></defs><rect width='100' height='100' fill='url(#g)'/><text x='50' y='62' text-anchor='middle' font-size='54' fill='white' font-family='Arial, sans-serif'>H</text></svg>`)}`,
-      sizes:"192x192",
-      type:"image/svg+xml",
-      purpose:"any"
-    }]
-  };
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('link'); link.rel='manifest'; link.href=url; document.head.appendChild(link);
-
-  if('serviceWorker' in navigator){
-    const swTxt=`
-      const CACHE='habits-v3';
-      self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./']))); });
-      self.addEventListener('activate',e=>{ e.waitUntil(self.clients.claim()); });
-      self.addEventListener('fetch',e=>{
-        e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-          return res;
-        }).catch(()=>r)));
-      });
-    `;
-    const swBlob=new Blob([swTxt],{type:'text/javascript'});
-    const swURL=URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swURL);
-  }
-}
-
-// ---------- Eventos UI ----------
-QS('#modeBtn').onclick=()=>{
-  mode = (mode==='light')?'dark':'light';
-  document.body.dataset.mode=mode;
-  LS.setItem('habit-mode',mode);
-  QS('#modeBtn').textContent = (mode==='light')?'Oscuro':'Claro';
-  // re-render canvases si modal abierto
-  if(QS('#modal').style.display==='flex'){
-    const y=+yearSel.value, m=+monthSel.value;
-    drawCalendar(y,m); drawDonut(y,m); drawBars(y,m);
-  }
-};
-QS('#toggleView').onclick=()=>{
-  view = (view==='month')?'year':'month';
-  LS.setItem('habit-view',view);
-  QS('#toggleView').textContent = (view==='month')?'Mes':'Anual';
-  QS('#toggleView').setAttribute('aria-pressed', view==='year' ? 'true' : 'false');
+// ---------- UI helpers ----------
+const el = (id)=> document.getElementById(id);
+function markDirty(v=true){ dirty=v; el('saveState').textContent = v? '• cambios sin guardar' : '• guardado'; }
+function setCtxDate(d){
+  ctxDate = d;
+  el('ctxDateLabel').textContent = fmt(d);
+  el('monLabel').textContent = d.toLocaleString('es-CL', {month:'long', year:'numeric'});
+  const wos = getWorkouts();
+  const found = wos.find(w=> w.date===fmt(ctxDate));
+  workDraft = found ? JSON.parse(JSON.stringify(found)) : defaultWorkout(fmt(ctxDate));
   refreshAll();
-};
-QS('#smooth').onchange=(e)=>{ smooth=+e.target.value; LS.setItem('trend-smooth',String(smooth)); QS('#smoothLabel').textContent=String(smooth); refreshAll(); };
-QS('#todayBtn').onclick=()=>{ monthSel.value=String(NOW.getMonth()); yearSel.value=String(NOW.getFullYear()); view='month'; LS.setItem('habit-view',view); refreshAll(); setTimeout(scrollToToday,60); };
-QS('#habitBtn').onclick=openHabitModal;
-QS('#heatBtn').onclick=openHeatmap;
-QS('#backupBtn').onclick=doBackup;
-QS('#importBtn').onclick=doImport;
-QS('#csvBtn').onclick=exportCSV;
-  QS('#resumenBtn').onclick=()=>{
-  const base = location.href.split('?')[0];
-  location.href = base + '?resumen';
-};
-monthSel.onchange=refreshAll; yearSel.onchange=refreshAll;
+}
 
-// ---------- Init ----------
-setupPWA();
-refreshAll();
-setTimeout(scrollToToday, 120);
-// ---------- Modo resumen ----------
-(function(){
-  const params = new URLSearchParams(location.search);
-  if(!params.has('resumen')) return;
+// ---------- Catálogo ----------
+function buildExerciseCatalogDatalist(){
+  const dl = el('exList'); dl.innerHTML='';
+  getExercises().forEach(e=>{ const o=document.createElement('option'); o.value=e.name; dl.appendChild(o); });
+}
+buildExerciseCatalogDatalist();
+function findOrCreateExercise(name, category){
+  const exs = getExercises();
+  let ex = exs.find(x=> x.name.toLowerCase()===name.toLowerCase());
+  if(!ex){ ex = {exId:'ex_'+Date.now(), name, category}; exs.push(ex); setExercises(exs); buildExerciseCatalogDatalist(); }
+  return ex;
+}
 
-  document.body.innerHTML = `
-    <main style="padding:1.5rem;font-family:system-ui,sans-serif">
-      <h1 style="margin-bottom:1rem">Progreso de hoy</h1>
-      <div id="resumenPct" style="font-size:3rem;font-weight:bold;margin-bottom:1rem"></div>
-      <div style="height:1rem;background:var(--grid);border-radius:999px;overflow:hidden;margin-bottom:1.5rem">
-        <span id="resumenBar" style="display:block;height:100%;background:var(--accent);width:0%"></span>
-      </div>
-      <div id="resumenHabitos"></div>
-    </main>
-  `;
+// ---------- Simple Add ----------
+function parseList(str){
+  if(!str) return [];
+  return str.split(/[\s,;–—-]+/).map(s=> s.trim()).filter(Boolean);
+}
+function addStrengthByLists(name, cat, repsStr, weightsStr){
+  const repsList = parseList(repsStr).map(n=> parseInt(n,10) || 0);
+  let wList = parseList(weightsStr).map(n=> parseFloat(n.replace(',','.')) || 0);
+  if(repsList.length===0) throw new Error('Debes indicar al menos 1 serie en "Series (reps)".');
+  if(wList.length===0) throw new Error('Debes indicar al menos 1 peso en "Pesos (kg)".');
+  // Si hay 1 peso, se aplica a todas las series; si hay menos, completa con último
+  while(wList.length < repsList.length) wList.push(wList[wList.length-1]);
+  const ex = findOrCreateExercise(name, cat);
+  let it = workDraft.items.find(i=> i.exId===ex.exId);
+  if(!it){ it = { exId:ex.exId, name:ex.name, category:cat, sets:[] }; workDraft.items.push(it); }
+  repsList.forEach((r, idx)=> it.sets.push({weight:round05(wList[idx]), reps:r, rpe:workDraft.feel||7}));
+  // recordar último peso
+  const lw = getLastWeights(); lw[ex.exId] = round05(wList[wList.length-1]); setLastWeights(lw);
+}
+function addCardio(name, speed, grade, minutes){
+  const ex = findOrCreateExercise(name, 'Cardio');
+  let it = workDraft.items.find(i=> i.exId===ex.exId);
+  if(!it){ it = { exId:ex.exId, name:ex.name, category:'Cardio', sets:[] }; workDraft.items.push(it); }
+  it.sets.push({speed:toNum(speed), grade:toNum(grade), minutes:toInt(minutes), rpe:workDraft.feel||7});
+}
+function initSimpleAdd(){
+  const t = el('saType');
+  const fuerza = ()=> { el('saFuerzaBlock').hidden=false; el('saCardioBlock').hidden=true; };
+  const cardio = ()=> { el('saFuerzaBlock').hidden=true; el('saCardioBlock').hidden=false; };
+  t.addEventListener('change', ()=> t.value==='cardio'? cardio(): fuerza());
+  fuerza();
 
-  const y=NOW.getFullYear(), m=NOW.getMonth(), d=NOW.getDate();
-  const data = getMonthData(y,m);
-  const nHab=habits.length;
-  let checks=0;
-  const wrap = document.getElementById('resumenHabitos');
-  wrap.style.display='grid';
-  wrap.style.gap='0.8rem';
+  const nameI = el('saName');
+  nameI.addEventListener('change', ()=>{
+    const name = nameI.value.trim().toLowerCase();
+    const ex = getExercises().find(e=> e.name.toLowerCase()===name);
+    if(ex){
+      // prellenar último peso
+      const lw = getLastWeights(); if(lw[ex.exId]!=null) el('saWeights').value = String(lw[ex.exId]);
+      updateSAHint();
+    }
+  });
 
-  habits.forEach((h,i)=>{
-    const k=`${ymd(y,m,d)}:${i}`;
-    const checked=!!data[k];
-    if(checked) checks++;
-    const div=document.createElement('div');
-    div.style.display='flex'; div.style.alignItems='center'; div.style.gap='0.6rem';
-    const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=checked; chk.style.transform='scale(1.4)';
-    chk.onchange=()=>{
-      data[k]=chk.checked;
-      setMonthData(y,m,data);
-      location.reload();
-    };
-    const lbl=document.createElement('label'); lbl.textContent=h.name;
-    div.append(chk,lbl);
+  el('saAdd').addEventListener('click', ()=>{
+    const type = t.value;
+    const name = nameI.value.trim();
+    if(!name){ alert('Escribe el nombre del ejercicio'); return; }
+
+    try{
+      if(type==='cardio'){
+        const sp = el('saSpeed').value, gr=el('saGrade').value, min=el('saMinutes').value;
+        if(!min || Number(min)<=0) throw new Error('Minutos debe ser > 0');
+        addCardio(name, sp, gr, min);
+        el('saSpeed').value=''; el('saGrade').value=''; el('saMinutes').value='';
+      }else{
+        const reps = el('saReps').value;
+        const w    = el('saWeights').value;
+        const cat  = el('saCat').value;
+        addStrengthByLists(name, cat, reps, w);
+        el('saReps').value=''; // deja el último peso por comodidad
+      }
+      renderDayList(); updateSummary(workDraft); markDirty(); updateSAHint();
+    }catch(e){ alert(e.message); }
+  });
+  updateSAHint();
+}
+function updateSAHint(){
+  const name = (el('saName').value||'').trim();
+  let n = 1;
+  if(name && workDraft){
+    const ex = getExercises().find(e=> e.name.toLowerCase()===name.toLowerCase());
+    if(ex){
+      const it = workDraft.items.find(i=> i.exId===ex.exId);
+      if(it) n = (it.sets?.length||0)+1;
+    }
+  }
+  el('saHint').textContent = `Serie #${n}`;
+}
+function round05(v){
+  const x = Math.round((Number(v)||0)*2)/2; // múltiplos de 0.5
+  return Number(x.toFixed(2));
+}
+function toNum(v){ const x=Number(String(v).replace(',','.')); return isFinite(x)? x:0; }
+function toInt(v){ const x=parseInt(v,10); return isFinite(x)? x:0; }
+
+// ---------- Listado del día ----------
+function renderDayList(){
+  const wrap = el('dayList'); wrap.innerHTML='';
+  let exCount=0;
+  workDraft.items.forEach(it=>{
+    exCount++;
+    const div = document.createElement('div'); div.className='exitem';
+    const left = document.createElement('div');
+    const name = document.createElement('div'); name.className='exname'; name.textContent = `${it.name} [${it.category}]`;
+    const meta = document.createElement('div'); meta.className='exmeta';
+    if(it.category==='Cardio'){
+      const mins = it.sets.reduce((a,s)=>a+(Number(s.minutes||0)),0);
+      meta.textContent = `${it.sets.length} set(s) • ${mins} min`;
+    }else{
+      const vol = it.sets.reduce((a,s)=>a+(Number(s.weight||0)*Number(s.reps||0)),0);
+      const top = it.sets.reduce((m,s)=> Math.max(m, Number(s.weight||0)), 0);
+      // agrega mini patrón si las reps varían
+      const repsStr = it.sets.map(s=> s.reps||0).join('-');
+      const wStr = it.sets.map(s=> s.weight||0).join('-');
+      meta.textContent = `${it.sets.length} set(s) • ${repsStr} reps • ${wStr} kg • Vol ${vol} kg • Top ${top} kg`;
+    }
+    left.append(name, meta);
+    const right = document.createElement('div');
+    const rm = document.createElement('button'); rm.className='btn small'; rm.textContent='Quitar';
+    rm.addEventListener('click', ()=>{
+      workDraft.items = workDraft.items.filter(x=> x!==it);
+      renderDayList(); updateSummary(workDraft); markDirty();
+    });
+    right.append(rm);
+    div.append(left,right);
     wrap.appendChild(div);
   });
+  el('miniText').textContent = `${fmt(ctxDate)} • ${exCount} ejercicios`;
+}
 
-  const pct = nHab>0 ? Math.round(100*checks/nHab) : 0;
-  document.getElementById('resumenPct').textContent = pct + '%';
-  document.getElementById('resumenBar').style.width = pct + '%';
-})();
-})();
+// ---------- Mini calendario (registrar) ----------
+function buildMiniCal(){
+  const cont = el('miniCal');
+  Array.from(cont.querySelectorAll('.day')).forEach(n=>n.remove());
+  const base = new Date(ctxDate.getFullYear(), ctxDate.getMonth(), 1);
+  const firstDow = ((base.getDay()||7)-1);
+  for(let i=0;i<firstDow;i++){ const f=document.createElement('div'); f.className='day na'; f.style.visibility='hidden'; cont.appendChild(f); }
+  const total = endOfMonth(ctxDate).getDate();
+  const wos = getWorkouts();
+  const monthStr = ym(ctxDate);
+  for(let d=1; d<=total; d++){
+    const dateStr = `${monthStr}-${String(d).padStart(2,'0')}`;
+    const w = wos.find(x=>x.date===dateStr);
+    const {kcal, color} = (()=>{
+      if(!w) return {kcal:0, color:'#0e162e'};
+      const c = computeIndicators(JSON.parse(JSON.stringify(w)));
+      const k = c.kcalTotal;
+      let col='#0f3a1e'; if(k>700) col='#27b96b'; else if(k>400) col='#1f8b50'; else if(k>200) col='#156034';
+      return {kcal:k, color:col};
+    })();
+    const cell = document.createElement('div'); cell.className='day'; cell.textContent=d; cell.style.background=color;
+    if(dateStr===fmt(today())) cell.classList.add('today');
+    if(dateStr===fmt(ctxDate)) cell.classList.add('sel');
+    cell.title = w? `Kcal: ${kcal}` : 'Sin sesión';
+    cell.addEventListener('click', ()=> setCtxDate(ymdToDate(dateStr)) );
+    cont.appendChild(cell);
+  }
+}
+
+// ---------- Heatmap pestaña Calendario ----------
+function buildHeatmap(){
+  const cont = el('heatGrid'); cont.querySelectorAll('.day').forEach(n=>n.remove());
+  const base = new Date(ctxDate.getFullYear(), ctxDate.getMonth(), 1);
+  const firstDow = ((base.getDay()||7)-1);
+  for(let i=0;i<firstDow;i++){ const f=document.createElement('div'); f.className='day na'; cont.appendChild(f); }
+  const total = endOfMonth(ctxDate).getDate();
+  const wos = getWorkouts(); const monthStr = ym(ctxDate);
+  for(let d=1; d<=total; d++){
+    const dateStr = `${monthStr}-${String(d).padStart(2,'0')}`;
+    const w = wos.find(x=>x.date===dateStr);
+    const {kcal, color} = (()=>{
+      if(!w) return {kcal:0, color:'#0e162e'};
+      const c = computeIndicators(JSON.parse(JSON.stringify(w)));
+      const k = c.kcalTotal;
+      let col='#0f3a1e'; if(k>700) col='#27b96b'; else if(k>400) col='#1f8b50'; else if(k>200) col='#156034';
+      return {kcal:k, color:col};
+    })();
+    const cell = document.createElement('div'); cell.className='day'; cell.textContent=d;
+    cell.style.background=color;
+    if(dateStr===fmt(today())) cell.classList.add('today');
+    if(dateStr===fmt(ctxDate)) cell.classList.add('sel');
+    cell.title = w? `Kcal: ${kcal}` : 'Sin sesión';
+    cell.addEventListener('click', ()=> setCtxDate(ymdToDate(dateStr)) );
+    cont.appendChild(cell);
+  }
+}
+
+// ---------- Metas ----------
+function getMonthGoal(mstr){
+  const g = getGoals();
+  if(!g[mstr]){
+    g[mstr] = {
+      days: 12, volume: 15000, cardioRateTarget:0.8,
+      rpeTarget:{avgMin:7,avgMax:8,topSet:true},
+      goalText: AUG_TEXT
+    };
+    setGoals(g);
+  }
+  return g[mstr];
+}
+function buildGoalsChart(){
+  const m = ym(ctxDate);
+  const goal = getMonthGoal(m);
+  el('goalText').textContent = goal.goalText || AUG_TEXT;
+  el('goalBadge').textContent = `Meta mes: ${goal.days} días • Cardio ≥${Math.round(goal.cardioRateTarget*100)}%`;
+  const wos = getWorkouts().filter(w=> w.date.startsWith(m));
+  const asistencia = new Set(wos.map(w=>w.date)).size;
+  let vol = 0, cardioOk=0;
+  wos.forEach(w=>{
+    const ww = JSON.parse(JSON.stringify(w)); computeIndicators(ww);
+    vol += ww.indicators.volume_total_kg;
+    if(ww.indicators.cardioMin>=10) cardioOk += 1;
+  });
+  const cardioPct = wos.length? Math.round((cardioOk/wos.length)*100) : 0;
+
+  const data = {
+    labels: ['Asistencia (días)','Volumen (kg)','Cardio (%)'],
+    datasets: [
+      { label:'Progreso', data:[asistencia, vol, cardioPct]},
+      { label:'Meta', data:[goal.days, goal.volume, Math.round(goal.cardioRateTarget*100)]}
+    ]
+  };
+  const ctx = el('goalsChart').getContext('2d');
+  if(charts.goals) charts.goals.destroy();
+  charts.goals = new Chart(ctx, { type:'bar', data, options:{ responsive:true, scales:{y:{beginAtZero:true}}, plugins:{legend:{display:true}} } });
+  const ok = asistencia>=Math.min(goal.days, goal.days-2);
+  el('metaChip').className = 'chip ' + (ok? 'ok':'warn');
+  el('metaChip').textContent = `Meta mes: ${asistencia}/${goal.days} días`;
+}
+
+// ---------- Analítica ----------
+function collectExerciseNames(){
+  const setNames = new Set();
+  getExercises().forEach(e=> setNames.add(e.name));
+  getWorkouts().forEach(w=> w.items.forEach(it=> setNames.add(it.name)));
+  return Array.from(setNames).sort((a,b)=> a.localeCompare(b,'es'));
+}
+function populateAnaliticaSelect(){
+  const sel = el('exSelectAnalitica'); sel.innerHTML='';
+  collectExerciseNames().forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+}
+let currentMetric='vol';
+['btnVol','btnTop','btnEpley'].forEach(id=> el(id).addEventListener('click', e=>{ currentMetric=e.target.dataset.metric; updateExerciseChart(); }));
+el('exSelectAnalitica').addEventListener('change', updateExerciseChart);
+function updateExerciseChart(){
+  const name = el('exSelectAnalitica').value;
+  const wos = getWorkouts().slice().sort((a,b)=> a.date.localeCompare(b.date));
+  const labels=[], data=[];
+  for(const w of wos){
+    const it = w.items.find(i=>i.name===name);
+    if(!it) continue;
+    labels.push(w.date);
+    if(currentMetric==='vol'){
+      let v=0; if(it.category==='Cardio'){ v = (it.sets||[]).reduce((a,s)=>a+Number(s.minutes||0),0); }
+      else v = (it.sets||[]).reduce((a,s)=>a+(Number(s.weight||0)*Number(s.reps||0)),0);
+      data.push(v);
+    }else if(currentMetric==='top'){
+      let top=0; if(it.category==='Cardio'){ top = Math.max(...it.sets.map(s=> Number(s.speed||0)), 0); }
+      else top = Math.max(...it.sets.map(s=> Number(s.weight||0)), 0);
+      data.push(top);
+    }else{
+      let best=0; if(it.category!=='Cardio') for(const s of it.sets){ best = Math.max(best, epley1RM(Number(s.weight||0), Number(s.reps||0))); }
+      data.push(Math.round(best));
+    }
+  }
+  const ctx = el('exChart').getContext('2d');
+  if(charts.ex) charts.ex.destroy();
+  charts.ex = new Chart(ctx, { type:'line', data:{labels, datasets:[{label:name||'—', data, tension:.25}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }});
+}
+
+// ---------- Exportar / Importar / Dashboard ----------
+function toCSVDay(workout){
+  const rows = [['date','body_weight_kg','exercise','category','set','weight_kg','reps','rpe','speed_kmh','incline_pct','minutes','feel_1_10']];
+  for(const it of workout.items){
+    for(const [i,s] of (it.sets||[]).entries()){
+      rows.push([
+        workout.date, workout.bodyWeight, it.name, it.category, i+1,
+        (it.category==='Cardio')? '' : (s.weight??''),
+        (it.category==='Cardio')? '' : (s.reps??''),
+        s.rpe ?? workout.feel ?? '',
+        (it.category==='Cardio')? (s.speed??'') : '',
+        (it.category==='Cardio')? (s.grade??'') : '',
+        (it.category==='Cardio')? (s.minutes??'') : '',
+        workout.feel ?? ''
+      ]);
+    }
+  }
+  return rows.map(r=> r.map(v => (''+v).replace(/"/g,'""')).map(v=> /[",\n]/.test(v)? `"${v}"`:v).join(',') ).join('\n');
+}
+function download(filename, content, mime='text/plain'){
+  const a = document.createElement('a'); const blob = new Blob([content], {type:mime});
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+function exportDay(){ const w = workDraft ?? currentWorkout(); download(`pt_day_${w.date}.csv`, toCSVDay(w), 'text/csv'); }
+function exportMonth(){
+  const m = ym(ctxDate);
+  const wos = getWorkouts().filter(w=> w.date.startsWith(m));
+  const rows = [['date','body_weight_kg','exercise','category','set','weight_kg','reps','rpe','speed_kmh','incline_pct','minutes','feel_1_10']];
+  wos.forEach(w=>{
+    const csv = toCSVDay(w).split('\n'); csv.shift();
+    csv.forEach(line=> { if(line.trim()) rows.push(line.split(',')); });
+  });
+  download(`pt_month_${m}.csv`, rows.map(r=> r.join(',')).join('\n'), 'text/csv');
+}
+function exportAll(){
+  const wos = getWorkouts().slice().sort((a,b)=> a.date.localeCompare(b.date));
+  const rows = [['date','body_weight_kg','exercise','category','set','weight_kg','reps','rpe','speed_kmh','incline_pct','minutes','feel_1_10']];
+  wos.forEach(w=>{
+    const csv = toCSVDay(w).split('\n'); csv.shift();
+    csv.forEach(line=> { if(line.trim()) rows.push(line.split(',')); });
+  });
+  download(`pt_all.csv`, rows.map(r=> r.join(',')).join('\n'), 'text/csv');
+}
+function parseCSVLine(line){
+  const res=[]; let cur='', inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch=== '"'){ if(inQ && line[i+1]==='"'){ cur+='"'; i++; } else inQ=!inQ; }
+    else if(ch===',' && !inQ){ res.push(cur); cur=''; }
+    else cur+=ch;
+  } res.push(cur); return res;
+}
+function importDayCSV(text){
+  const header = 'date,body_weight_kg,exercise,category,set,weight_kg,reps,rpe,speed_kmh,incline_pct,minutes';
+  const lines = text.trim().split(/\r?\n/);
+  if(!lines[0].toLowerCase().startsWith('date,')) throw new Error('Cabecera CSV inválida');
+  const [date] = lines[1].split(',');
+  const w = { ...defaultWorkout(date), items:[] };
+  const map = new Map();
+  for(let i=1;i<lines.length;i++){
+    const cols = parseCSVLine(lines[i]); if(cols.length<11) continue;
+    const [dt,bw,ex,cat,idx,wei,reps,rpe,spd,gr,min] = cols;
+    w.bodyWeight = Number(bw||w.bodyWeight);
+    if(!map.has(ex)) map.set(ex, {exId:'ex_'+ex.toLowerCase().replace(/\s+/g,'_'), name:ex, category:cat, sets:[]});
+    const it = map.get(ex);
+    if(cat==='Cardio') it.sets.push({speed:Number(spd||0), grade:Number(gr||0), minutes:Number(min||0), rpe:Number(rpe||0)});
+    else it.sets.push({weight:Number(wei||0), reps:Number(reps||0), rpe:Number(rpe||0)});
+  }
+  w.items = Array.from(map.values());
+  setCtxDate(ymdToDate(w.date));
+  workDraft = JSON.parse(JSON.stringify(w));
+  saveCurrentWorkout(workDraft);
+  renderDayList(); updateSummary(workDraft); buildMiniCal(); buildHeatmap(); buildGoalsChart(); populateAnaliticaSelect();
+  alert('Importado OK');
+}
+function drawDashboard(workout, kcalTotal){
+  const c = el('dashCanvas'); const ctx = c.getContext('2d');
+  const w=c.width, h=c.height; ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0e162e'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#e8eefc'; ctx.font='16px -apple-system, Inter, Segoe UI, Roboto, Arial';
+  ctx.fillText('PT Dashboard', 12, 22);
+  ctx.fillStyle='#9aa5bd'; ctx.fillText(workout.date, 12, 42);
+  const inds = workout.indicators || computeIndicators(JSON.parse(JSON.stringify(workout))).indicators;
+  const chips=[`Kcal ${kcalTotal}`,`Vol ${inds.volume_total_kg} kg`,`Top ${inds.topSet} kg`,`RPE ${inds.rpeAvg}`,`Cardio ${inds.cardioMin} min`,`Ex ${workout.items.length}`,`Feel ${workout.feel}/10`];
+  let x=12,y=72;
+  chips.forEach(t=>{
+    ctx.fillStyle='#10182a'; ctx.strokeStyle='#1f2a44';
+    const pad=8, tw=ctx.measureText(t).width;
+    ctx.beginPath(); ctx.roundRect(x, y-16, tw+pad*2, 28, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#e8eefc'; ctx.fillText(t, x+pad, y+4);
+    x += tw+pad*2+8; if(x> w-140){ x=12; y+=40; }
+  });
+  const {progPct}=computeIndicators(JSON.parse(JSON.stringify(workout)));
+  const barW=w-24, barH=16, bx=12, by=h-30;
+  ctx.fillStyle='#0b1226'; ctx.fillRect(bx,by,barW,barH);
+  const pv=Math.max(0,Math.min(1,progPct/100));
+  const g=ctx.createLinearGradient(bx,0,bx+barW,0);
+  g.addColorStop(0,'#ff6b6b'); g.addColorStop(.5,'#ffd166'); g.addColorStop(1,'#06d6a0');
+  ctx.fillStyle=g; ctx.fillRect(bx,by,barW*pv,barH);
+  ctx.fillStyle='#9aa5bd'; ctx.fillText(`Cumplimiento: ${progPct}%`, bx, by-8);
+}
+
+// ---------- Guardar / Load ----------
+function currentWorkout(){
+  const wos = getWorkouts();
+  const idx = wos.findIndex(w=> w.date===fmt(ctxDate));
+  if(idx>=0) return JSON.parse(JSON.stringify(wos[idx]));
+  return defaultWorkout(fmt(ctxDate));
+}
+function saveCurrentWorkout(workout){
+  const wos = getWorkouts();
+  const idx = wos.findIndex(w=> w.date===workout.date);
+  if(idx>=0) wos[idx]=workout; else wos.push(workout);
+  setWorkouts(wos); markDirty(false);
+}
+
+// ---------- Summary + datos duros ----------
+function updateSummary(workout){
+  workout.bodyWeight = Number(el('bodyWeight').value||74);
+  workout.note = el('note').value||'';
+  workout.feel = Number(el('feelRange').value||7);
+  const {kcalTotal, progPct} = computeIndicators(workout);
+  el('prog').value = progPct; el('progPct').textContent = `${progPct}%`;
+  el('kcalTotal').textContent = `${kcalTotal}`;
+  updateRawDay(workout);
+  drawDashboard(workout, kcalTotal);
+}
+function updateRawDay(workout){
+  const box=el('rawDay'); let out=`Fecha: ${workout.date} | Peso: ${workout.bodyWeight} kg | Feel: ${workout.feel}/10\nNota: ${workout.note||'—'}\n\n`;
+  for(const it of workout.items){
+    out += `• ${it.name} [${it.category}]\n`;
+    it.sets.forEach((s,i)=>{
+      if(it.category==='Cardio'){ out += `  - #${i+1} ${s.speed||0}km/h @ ${s.grade||0}% × ${s.minutes||0}min, RPE ${s.rpe||workout.feel||7}\n`; }
+      else{ out += `  - #${i+1} ${s.weight||0}kg × ${s.reps||0}, RPE ${s.rpe||workout.feel||7}\n`; }
+    });
+  } box.textContent = out;
+}
+
+// ---------- Feel slider (emoji + color) ----------
+function feelUpdateUI(v){
+  const em = ['🔒','😣','😕','🙂','🙂','😌','😎','💪','⚡️','🔥'];
+  const idx = Math.min(10, Math.max(1, parseInt(v,10))) - 1;
+  el('feelEmoji').textContent = em[idx] || '🙂';
+  el('feelLabel').textContent = `${v} / 10`;
+  // color del fondo según valor
+  const wrap = el('feelEmoji').closest('.feel-wrap');
+  const colors = ['#1b0b0b','#2a0f0f','#2a1a0f','#1a2610','#102619','#0f2a22','#0f2a28','#0f2a31','#0f233a','#0f1f3a'];
+  wrap.style.background = colors[idx] || '#0e162e';
+}
+el('feelRange').addEventListener('input', ()=> { feelUpdateUI(el('feelRange').value); markDirty(); updateSummary(workDraft); });
+
+// ---------- Refresh general ----------
+function refreshAll(){
+  const w = workDraft ?? defaultWorkout(fmt(ctxDate));
+  el('bodyWeight').value = w.bodyWeight ?? 74;
+  el('note').value = w.note ?? '';
+  el('feelRange').value = w.feel ?? 7; feelUpdateUI(el('feelRange').value);
+  renderDayList();
+  updateSummary(w);
+  buildMiniCal();
+  buildHeatmap();
+  buildGoalsChart();
+  populateAnaliticaSelect();
+  buildExerciseCatalogDatalist();
+}
+
+// ---------- Eventos ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('main section').forEach(s=> s.hidden = (s.id !== 'tab-'+tab));
+    if(tab==='calendario'){ buildHeatmap(); }
+    if(tab==='metas'){ buildGoalsChart(); }
+    if(tab==='graficos'){ populateAnaliticaSelect(); updateExerciseChart(); }
+    if(tab==='exportar'){ drawDashboard(workDraft ?? currentWorkout(), computeIndicators(workDraft ?? currentWorkout()).kcalTotal); }
+  });
+});
+el('btnToday').addEventListener('click', ()=> setCtxDate(today()));
+el('btnNewToday').addEventListener('click', ()=>{
+  setCtxDate(today());
+  workDraft = defaultWorkout(fmt(ctxDate));
+  workDraft.items = JSON.parse(JSON.stringify(getBase()));
+  renderDayList(); updateSummary(workDraft); markDirty(true);
+});
+el('btnLoadBase').addEventListener('click', ()=>{
+  if(!workDraft) workDraft = defaultWorkout(fmt(ctxDate));
+  workDraft.items = workDraft.items.concat(JSON.parse(JSON.stringify(getBase())));
+  renderDayList(); updateSummary(workDraft); markDirty();
+});
+el('btnSave').addEventListener('click', ()=>{
+  if(!workDraft) workDraft = defaultWorkout(fmt(ctxDate));
+  workDraft.bodyWeight = Number(el('bodyWeight').value||74);
+  workDraft.note = el('note').value||'';
+  workDraft.feel = Number(el('feelRange').value||7);
+  computeIndicators(workDraft);
+  saveCurrentWorkout(workDraft);
+  buildMiniCal(); buildHeatmap(); buildGoalsChart(); populateAnaliticaSelect();
+  alert('Sesión guardada');
+});
+el('btnSetGoal').addEventListener('click', ()=>{
+  const m = ym(ctxDate);
+  const g = getGoals();
+  const cur = getMonthGoal(m);
+  const nd = Number(prompt(`Meta de asistencia para ${m} (días):`, cur.days)||cur.days);
+  const nv = Number(prompt(`Meta de volumen (kg):`, cur.volume)||cur.volume);
+  const nc = Number(prompt(`Meta de cardio (%):`, Math.round(cur.cardioRateTarget*100))||Math.round(cur.cardioRateTarget*100))/100;
+  const nt = prompt('Texto del objetivo:', cur.goalText||AUG_TEXT) || cur.goalText;
+  g[m] = {...cur, days:nd, volume:nv, cardioRateTarget:nc, goalText:nt};
+  setGoals(g); buildGoalsChart(); alert('Meta actualizada');
+});
+el('monPrev').addEventListener('click', ()=>{ const d=new Date(ctxDate); d.setMonth(d.getMonth()-1); setCtxDate(d); });
+el('monNext').addEventListener('click', ()=>{ const d=new Date(ctxDate); d.setMonth(d.getMonth()+1); setCtxDate(d); });
+
+el('csvDay').addEventListener('click', exportDay);
+el('csvMonth').addEventListener('click', exportMonth);
+el('csvAll').addEventListener('click', exportAll);
+el('btnImport').addEventListener('click', ()=>{
+  const f = el('csvImport').files?.[0];
+  if(!f){ alert('Selecciona un archivo CSV'); return; }
+  const rd = new FileReader();
+  rd.onload = ()=> { try{ importDayCSV(String(rd.result)); } catch(e){ alert('Error al importar: '+e.message); } };
+  rd.readAsText(f);
+});
+el('btnPNG').addEventListener('click', ()=>{
+  const url = el('dashCanvas').toDataURL('image/png');
+  const a = document.createElement('a'); a.href=url; a.download=`dashboard_${fmt(ctxDate)}.png`; a.click();
+});
+el('btnPDF').addEventListener('click', ()=> window.print());
+
+el('bodyWeight').addEventListener('input', ()=>{
+  if(!workDraft) workDraft = defaultWorkout(fmt(ctxDate));
+  workDraft.bodyWeight = Number(el('bodyWeight').value||74);
+  markDirty(); updateSummary(workDraft);
+});
+el('note').addEventListener('input', ()=>{
+  if(!workDraft) workDraft = defaultWorkout(fmt(ctxDate));
+  workDraft.note = el('note').value||'';
+  markDirty(); updateSummary(workDraft);
+});
+
+// ---------- Inicialización ----------
+initSimpleAdd();
+setCtxDate(today());
+
+// ---------- Auto-tests básicos ----------
+console.log('%cAuto-tests', 'color:#9ae6b4');
+console.assert(Math.round(epley1RM(100,10))===133, 'Epley 100x10 ≈ 133');
+console.assert(Math.round(kcalStrengthSet(7,74))>0, 'kcal fuerza ok');
+console.assert(Math.round(kcalCardioSet(6,7,10,74))>0, 'kcal cardio ok');
 
 </script>
 </body>
